@@ -1,0 +1,9 @@
+services:
+  discord-coelho-bot:
+    build: .
+    container_name: discord-coelho-bot
+    env_file:
+      - .env
+    restart: always
+    ports:
+      - "3000:3000"

@@ -1,5 +1,7 @@
 import { Client, GatewayIntentBits } from "discord.js";
 import dotenv from "dotenv";
+import express from "express";
+
 dotenv.config();
 
 const client = new Client({
@@ -97,3 +99,7 @@ client.on("messageCreate", (message) => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
+
+const app = express();
+app.get("/", (req, res) => res.send("Bot is running ✅"));
+app.listen(3000, () => console.log("🌐 Web server ready"));
