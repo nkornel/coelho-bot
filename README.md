@@ -1,6 +1,6 @@
 # 🧘 Discord Quote Bot
 
-A simple and elegant Discord bot that replies with inspirational quotes from Paulo Coelho or Indian gurus when a user types `!quote` in a specific channel.
+A simple and elegant Discord bot that replies with inspirational quotes from Paulo Coelho or Indian gurus when a user types in a specific channel.
 
 Built with:
 - [Node.js](https://nodejs.org/)
