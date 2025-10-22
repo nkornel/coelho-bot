@@ -167,7 +167,7 @@ In your Discord server, type anything
 
 ## 🪶 License
 
-MIT License © 2025 Kornel M. Novak  
+ISC License © 2025 Kornel M. Novak  
 Feel free to use and modify for your own Discord servers.
 
 ---
