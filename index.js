@@ -1,6 +1,7 @@
 import { Client, GatewayIntentBits } from "discord.js";
 import dotenv from "dotenv";
 import express from "express";
+import OpenAI from "openai";
 
 dotenv.config();
 
@@ -12,53 +13,28 @@ const client = new Client({
   ],
 });
 
-const quotes = [
+// Fallback quotes for when OpenAI is unavailable
+const fallbackQuotes = [
+  "Az elme minden. Amit gondolsz, azzá válsz. — Buddha",
   "Amikor valamit igazán akarsz, az egész univerzum összefog, hogy segítsen elérni. — Paulo Coelho",
-  "Egyszer majd felébredsz, és nem lesz több időd megtenni, amit mindig is szerettél volna. Tedd meg most. — Paulo Coelho",
-  "Légy realista: tervezz egy csodát. — Osho",
+  "A csend Isten nyelve. Minden más csak gyenge fordítás. — Rumi",
+  "A seb az a hely, ahol a Fény belép hozzád. — Rumi",
+  "Nem te vagy egy csepp az óceánban. Te vagy az egész óceán egy cseppben. — Rumi",
   "Az élet ott kezdődik, ahol a félelem véget ér. — Osho",
   "Ha ellenállsz a változásnak, magának az életnek állsz ellen. — Sadhguru",
-  "Az vagy, aminek hiszed magad. — Paulo Coelho",
-  "A béke belülről fakad. Ne kívül keresd. — Buddha",
-  "Amit gondolsz, azzá válsz. Amit érzel, azt vonzod. Amit elképzelsz, azt megteremted. — Buddha",
-  "Az egyetlen utazás az, ami befelé vezet. — Rainer Maria Rilke",
-  "Ne hagyd, hogy mások véleményének zaja elnyomja a belső hangodat. — Steve Jobs",
-  "A seb az a hely, ahol a Fény belép hozzád. — Rumi",
-  "Határtalanná válsz, amikor rájössz, hogy sosem voltál korlátok közé zárva. — Ismeretlen",
-  "Ne várj a tökéletes pillanatra. Ragadd meg a pillanatot, és tedd tökéletessé. — Ismeretlen",
-  "Minél csendesebb leszel, annál többet hallasz. — Ram Dass",
-  "Minden, amit el tudsz képzelni, valóságos. — Pablo Picasso",
-  "A valóságodat az észlelésed teremti. — Ismeretlen",
-  "Amit keresel, az is téged keres. — Rumi",
-  "Az egyetlen kiút befelé vezet. — Jun Po Denis Kelly",
-  "Nem kell uralkodnod a gondolataidon; csak ne hagyd, hogy ők uralkodjanak rajtad. — Dan Millman",
-  "Engedd el, vagy magával rángat. — Zen közmondás",
-  "Egy élet legnagyobb kiváltsága az, hogy azzá válhatsz, aki valójában vagy. — Carl Jung",
-  "A nehézségek közepén lehetőség rejlik. — Albert Einstein",
-  "Önmagadat szeretni egy életre szóló románc kezdete. — Oscar Wilde",
-  "Változtasd meg, ahogyan a dolgokat nézed, és a dolgok, amiket nézel, megváltoznak. — Wayne Dyer",
-  "Sár nélkül nincs lótusz. — Thich Nhat Hanh",
-  "Add át magad annak, ami van. Engedd el, ami volt. Higgy abban, ami lesz. — Sonia Ricotti",
-  "Nem fedezhetsz fel új óceánokat, ha nincs bátorságod elveszíteni a part látványát. — André Gide",
   "A jelen pillanat az egyetlen idő, ami létezik. — Eckhart Tolle",
-  "Bármit is gondolsz, hogy a világ visszatart tőled, valójában te tartod vissza a világtól. — Eckhart Tolle",
-  "Engedd el az eredményhez való ragaszkodást, és az út világossá válik. — Ismeretlen",
-  "Az életed olyan jó, amilyen a gondolkodásmódod. — Ismeretlen",
-  "A csillagok sem ragyognak sötétség nélkül. — D.H. Sidebottom",
-  "Az univerzum nem azt adja, amit gondolataiddal kérsz, hanem azt, amit tetteiddel követelsz. — Steve Maraboli",
-  "Nem te vagy egy csepp az óceánban. Te vagy az egész óceán egy cseppben. — Rumi",
-  "Az elme minden. Amit gondolsz, azzá válsz. — Buddha",
-  "Ne félj újrakezdeni. Ez egy lehetőség valami jobbat építeni. — Ismeretlen",
-  "A csend Isten nyelve. Minden más csak gyenge fordítás. — Rumi",
-  "Minél többet engedsz el, annál magasabbra emelkedsz. — Ismeretlen",
-  "A hála azt, amid van, elegendővé teszi. — Aiszóposz",
-  "Az energiád bemutat, mielőtt megszólalnál. — Ismeretlen",
   "A lélek mindig tudja, hogyan gyógyítsa meg önmagát. A kihívás az, hogy elcsendesítsd az elmét. — Caroline Myss",
-  "Néha nyersz, néha tanulsz. — John C. Maxwell",
-  "Minden reggel újra megszületünk. Az számít leginkább, amit ma teszünk. — Buddha",
-  "A boldogság kulcsa, hogy hagyjuk a dolgokat olyannak lenni, amilyenek. — Mandy Hale",
-  "A félelem hazug. — Ismeretlen"
+  "Ne félj újrakezdeni. Ez egy lehetőség valami jobbat építeni. — Ismeretlen",
+  "Minél többet engedsz el, annál magasabbra emelkedsz. — Ismeretlen",
+  "Sár nélkül nincs lótusz. — Thich Nhat Hanh"
 ];
+
+// Configure OpenAI client
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// Simple per-user cooldown map to avoid spamming the API
+const cooldownMs = 5000; // 5 seconds per user
+const lastRequestAt = new Map();
 
 // Use clientReady instead of the deprecated ready event (discord.js v15 rename)
 client.once("clientReady", () => {
@@ -86,16 +62,62 @@ process.on("uncaughtException", (err) => {
   process.exit(1);
 });
 
-client.on("messageCreate", (message) => {
-  // Ignore bot messages
-  if (message.author.bot) return;
+client.on("messageCreate", async (message) => {
+  try {
+    // Ignore bot messages and DMs
+    if (message.author.bot || !message.guild) return;
 
-  // Only respond in the designated channel
-  if (message.channel.id !== process.env.QUOTE_CHANNEL_ID) return;
+    // Only respond in the designated channel
+    if (message.channel.id !== process.env.QUOTE_CHANNEL_ID) return;
 
-  // Reply with a random quote
-  const quote = quotes[Math.floor(Math.random() * quotes.length)];
-  message.reply(quote);
+    // Cooldown check
+    const userId = message.author.id;
+    const now = Date.now();
+    const last = lastRequestAt.get(userId) || 0;
+    if (now - last < cooldownMs) {
+      await message.reply("A türelem a bölcsesség kapuja. Várj még egy pillanatot. — Zen tanítás");
+      return;
+    }
+    lastRequestAt.set(userId, now);
+
+    // Build a short prompt instructing the model to produce a one-line spiritual advice in Hungarian
+    const prompt = `A felhasználó üzenetére válaszolj egyetlen tömör, költői sorral. A válasz legyen spirituális jellegű, bölcs és kedves hangvételű tanács magyar nyelven. A választ formázd így: "A bölcsesség... — Szerző". Ne tegyél fel kérdéseket. Üzenet: "${message.content.replace(/\"/g, '\\"')}"`;
+
+    const resp = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content:
+            "Te egy nyugodt, bölcs spirituális vezető vagy. Írj rövid, költői hangvételű üzeneteket magyar nyelven, az indiai guru hagyományok és klasszikus spirituális történetmesélők stílusában. Minden válasz végén adj meg egy szerzőt (pl. 'Ősi bölcsesség', 'Zen mondás', 'Indiai közmondás', stb). Pontosan egy tömör sort adj válaszul a következő formátumban: 'A bölcsesség... — Szerző'"
+        },
+        { role: "user", content: prompt }
+      ],
+      max_tokens: 80,
+      temperature: 0.75,
+    });
+
+    const aiReply = resp.choices?.[0]?.message?.content?.trim();
+    if (!aiReply) {
+      await message.reply("A csend olykor a legbölcsebb válasz. — Zen mondás");
+      return;
+    }
+
+    await message.reply(aiReply);
+  } catch (err) {
+    console.error("Error generating AI reply:", err);
+    try {
+      // When OpenAI is unavailable, use a random fallback quote
+      if (err?.error?.type === 'insufficient_quota' || err?.status === 429) {
+        const fallbackQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
+        await message.reply(`${fallbackQuote} 🌟`);
+      } else {
+        // For other errors, still try a fallback quote
+        const fallbackQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
+        await message.reply(`${fallbackQuote} ✨`);
+      }
+    } catch (_) {}
+  }
 });
 
 client.login(process.env.DISCORD_TOKEN);

@@ -1,21 +1,27 @@
-# 🧘 Discord Quote Bot
+# 🧘 Coelho Bot
 
-A simple and elegant Discord bot that replies with inspirational quotes from Paulo Coelho or Indian gurus when a user types in a specific channel.
+Egy spirituális Discord bot, amely személyre szabott bölcsességeket és inspiráló idézeteket oszt meg magyar nyelven. A bot OpenAI integrációval működik, és automatikusan klasszikus idézetekre vált, ha szükséges.
 
 Built with:
 - [Node.js](https://nodejs.org/)
 - [discord.js v14](https://discord.js.org/)
+- [OpenAI API](https://openai.com/)
 - [Express](https://expressjs.com/)
 - Docker (production ready)
-- Optional private Docker registry support
+- Automatic fallback system
 
 ---
 
 ## ✨ Features
 
-- Restricts use to a specific Discord channel
-- Lightweight Express server for uptime monitoring
-- Easily deployable on any VPS with Docker
+- 🤖 AI-alapú spirituális válaszok magyar nyelven (OpenAI)
+- 📜 Klasszikus bölcsességek gyűjteménye fallback rendszerként
+- 🎯 Személyre szabott, kontextus-alapú válaszok
+- 🌍 Teljes magyar nyelvű működés
+- ⚡ Beépített spam védelem (rate limiting)
+- 🔄 Automatikus fallback rendszer API problémák esetén
+- 🖥️ Lightweight Express server for uptime monitoring
+- 📦 Easily deployable on any VPS with Docker
 
 ---
 
@@ -55,6 +61,7 @@ Then edit `.env` with your values:
 ```env
 DISCORD_TOKEN=your_discord_token_here
 QUOTE_CHANNEL_ID=123456789012345678
+OPENAI_API_KEY=your_openai_api_key_here  # Optional, bot will use fallback quotes if not provided
 ```
 
 ### 4. Run locally
@@ -78,6 +85,29 @@ docker run -d   --name quote-bot   --env-file .env   --restart always   -p 3000:
 
 The bot will automatically log in and stay running.  
 Express server will be available at [http://localhost:3000](http://localhost:3000).
+
+---
+
+## 🎯 Válaszrendszer
+
+### AI-Generált Válaszok
+- Személyre szabott, kontextus-alapú bölcsességek magyar nyelven
+- Minden válasz tartalmaz szerző attribúciót
+- OpenAI API segítségével generált egyedi tartalom
+
+### Fallback Idézetek
+Ha az OpenAI szolgáltatás nem elérhető, a bot automatikusan átvált a beépített idézetgyűjteményre. Források:
+- Paulo Coelho
+- Rumi
+- Buddha
+- Osho
+- Sadhguru
+- Eckhart Tolle
+- és más spirituális tanítók
+
+### Hibaüzenetek
+- "A türelem a bölcsesség kapuja..." - Rate limit védelem aktív
+- "A csend olykor a legbölcsebb válasz..." - OpenAI szolgáltatás nem elérhető
 
 ---
 
