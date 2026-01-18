@@ -1,6 +1,6 @@
 {
   "name": "discord-coelho-bot",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -12,7 +12,7 @@
     "url": "ssh://git@github.com:nkornel/coelho-bot.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "nkornel",
   "license": "ISC",
   "description": "",
   "dependencies": {
