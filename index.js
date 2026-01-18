@@ -81,20 +81,29 @@ client.on("messageCreate", async (message) => {
     lastRequestAt.set(userId, now);
 
     // Build a short prompt instructing the model to produce a one-line spiritual advice in Hungarian
-    const prompt = `A felhasználó üzenetére válaszolj egyetlen tömör, költői sorral. A válasz legyen spirituális jellegű, bölcs és kedves hangvételű tanács magyar nyelven. A választ formázd így: "A bölcsesség... — Szerző". Ne tegyél fel kérdéseket. Üzenet: "${message.content.replace(/\"/g, '\\"')}"`;
+    const prompt = `A felhasználó ezt mondta neked: "${message.content.replace(/\"/g, '\\"')}". 
+                Válaszolj neki közvetlenül, mint egy tanító. Ne használj idézőjeleket és ne nevezz meg szerzőt.`;
 
     const resp = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
           content:
-            "Te egy nyugodt, bölcs spirituális vezető vagy. Írj rövid, költői hangvételű üzeneteket magyar nyelven, az indiai guru hagyományok és klasszikus spirituális történetmesélők stílusában. Minden válasz végén adj meg egy szerzőt (pl. 'Ősi bölcsesség', 'Zen mondás', 'Indiai közmondás', stb). Pontosan egy tömör sort adj válaszul a következő formátumban: 'A bölcsesség... — Szerző'"
+            "Te vagy Coelho mester, a bölcs útitárs. Stílusod Paulo Coelho műveit idézi: tele van metaforákkal a sorsról, a világ lelkéről, a jelekről és a szív szaváról. " +
+            "Irányelvek: " +
+            "1. Válaszolj közvetlenül a felhasználónak, mint egy tanító vagy barát. " +
+            "2. Használj olyan kulcsszavakat és témákat, mint: az Út, a Személyes Történet, a Világ Lelke, a jelek követése, a szív bátorsága. " +
+            "3. Ne használj idézőjeleket, és ne írd oda a végére, hogy ki mondta. A válasz maga a tanítás. " +
+            "4. A válaszaid legyenek rövidek (1-3 mondat), biztatóak és misztikusak. " +
+            "5. Kerüld a konkrét, gyakorlati tanácsokat; inkább a lélek belső erejére fókuszálj."
         },
         { role: "user", content: prompt }
       ],
-      max_tokens: 80,
-      temperature: 0.75,
+      max_tokens: 120,
+      temperature: 0.85,
+      presence_penalty: 0.5,
+      frequency_penalty: 0.3
     });
 
     const aiReply = resp.choices?.[0]?.message?.content?.trim();
