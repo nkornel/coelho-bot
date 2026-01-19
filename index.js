@@ -70,6 +70,10 @@ client.on("messageCreate", async (message) => {
     // Only respond in the designated channel
     if (message.channel.id !== process.env.QUOTE_CHANNEL_ID) return;
 
+    // Only respond when the bot is explicitly mentioned
+    const mentionedBot = message.mentions?.users?.has?.(client.user.id);
+    if (!mentionedBot) return;
+
     // Cooldown check
     const userId = message.author.id;
     const now = Date.now();
